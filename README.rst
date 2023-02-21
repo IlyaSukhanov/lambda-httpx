@@ -58,6 +58,20 @@ Stand alone that calls endpoint 10 times asyncronously.
         loop = asyncio.get_event_loop()
         responses = loop.run_until_complete(main(10))
         print(responses)
+
+A synchronous Transport also exists and can be utilized as follows:
+
+.. code-block:: python
+
+    import httpx
+    from lambda_httpx import LambdaTransport
+
+    with LambdaTransport() as transport:
+        mounts = {"http+lambda://": transport}
+        with httpx.Client(mounts=mounts) as client:
+            response = client.get("http+lambda://flaskexp-test/health")
+            print(response)
+
  
 Lambda authorization is configured via `boto3`_, and can be set up using
 `environment variables`_ or a `configuration file`_. Configuration file is
