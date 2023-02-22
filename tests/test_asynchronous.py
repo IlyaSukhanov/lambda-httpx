@@ -1,23 +1,13 @@
 import asyncio
 from unittest import IsolatedAsyncioTestCase
-from unittest.mock import DEFAULT, AsyncMock, MagicMock, patch
+from unittest.mock import AsyncMock, MagicMock
 
 import httpx
+from patcher import PatcherBase
+from payloads import delayed_reply
 from with_time.timer import PrintingTimer
 
 from lambda_httpx import AsyncLambdaTransport
-
-
-class PatcherBase:
-    def add_patcher(self, target, new=DEFAULT, new_callable=None):
-        target_patch = patch(target, new, new_callable)
-        self.addCleanup(target_patch.stop)
-        return target_patch.start()
-
-
-async def delayed_reply():
-    await asyncio.sleep(0.1)
-    return b'{"body": "ewogICJzdGF0dXMiOiAiVVAiCn0K", "isBase64Encoded": "true", "statusCode": 200, "headers": {"Content-Type": "application/json", "X-Request-ID": "", "Content-Length": "21"}}'  # noqa: E501
 
 
 async def call_many(count):
@@ -29,9 +19,8 @@ async def call_many(count):
             await asyncio.gather(*coros)
 
 
-class TestSimpleProxyAsync(PatcherBase, IsolatedAsyncioTestCase):
+class TestAsyncLambdaTransport(PatcherBase, IsolatedAsyncioTestCase):
     def setUp(self):
-
         mock_session = MagicMock()
         mock_invoke_result = MagicMock()
         mock_invoke_result().__getitem__().read = delayed_reply
@@ -43,7 +32,7 @@ class TestSimpleProxyAsync(PatcherBase, IsolatedAsyncioTestCase):
         )
 
         self.aiboto3 = self.add_patcher(
-            "lambda_httpx.lambda_httpx.aioboto3", mock_session()
+            "lambda_httpx.asynchronous.aioboto3", mock_session()
         )
 
     async def test_200_ok(self):
